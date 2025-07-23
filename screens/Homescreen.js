@@ -1,11 +1,53 @@
-import React from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity,
+  ActivityIndicator
+} from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { AuthContext } from '../App'; // Adjust path as needed
 
-export default function HomeScreen({ navigation, setIsLoggedIn }) {
-  const branch = 'No branch selected'; 
+export default function HomeScreen({ navigation }) {
+  // Get auth context
+  const { setIsLoggedIn } = useContext(AuthContext);
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
+  // Branch selection states
+  const [branch, setBranch] = useState('No branch selected');
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(null);
+  const [items, setItems] = useState([
+    { label: 'Carrefour', value: 'carrefour' },
+    { label: 'Quickmart', value: 'quickmart' },
+    { label: 'Naivas', value: 'naivas' },
+    { label: 'Chandarana', value: 'chandarana' },
+  ]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      // Simulate logout process
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsLoggedIn(false);
+      // Optional: Clear any stored data
+      // await AsyncStorage.clear();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleBranchSelect = (selectedValue) => {
+    setValue(selectedValue);
+    // Update the displayed branch name
+    const selectedBranch = items.find(item => item.value === selectedValue);
+    if (selectedBranch) {
+      setBranch(selectedBranch.label);
+    }
   };
 
   return (
@@ -13,14 +55,35 @@ export default function HomeScreen({ navigation, setIsLoggedIn }) {
       <Text style={styles.title}>Welcome to Preferred Laundry</Text>
       <Text style={styles.subtitle}>Branch: {branch}</Text>
 
-      <Button
-        title="Add New Clothing Item"
-        onPress={() => navigation.navigate('AddClothes', { branch })}
-      />
-
-      <View style={{ marginTop: 20 }}>
-        <Button title="Logout" onPress={handleLogout} color="red" />
+      <View style={styles.dropdownContainer}>
+        <DropDownPicker
+          open={open}
+          value={value}
+          items={items}
+          setOpen={setOpen}
+          setValue={handleBranchSelect}
+          setItems={setItems}
+          placeholder="Select your branch"
+          listMode="SCROLLVIEW"
+          style={styles.dropdown}
+          dropDownContainerStyle={styles.dropdownList}
+        />
       </View>
+
+      <TouchableOpacity 
+        style={styles.logoutButton}
+        onPress={handleLogout}
+        disabled={isLoggingOut}
+      >
+        {isLoggingOut ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <View style={styles.logoutButtonContent}>
+            <Icon name="sign-out" size={18} color="white" />
+            <Text style={styles.logoutButtonText}> Logout</Text>
+          </View>
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -30,17 +93,50 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#fff',
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
-    color: 'purple'
+    color: '#231942'
   },
   subtitle: {
     fontSize: 18,
     marginBottom: 30,
     textAlign: 'center',
+    color: '#333',
+  },
+  dropdownContainer: {
+    marginBottom: 20,
+    zIndex: 1000, // Important for dropdown to appear above other elements
+  },
+  dropdown: {
+    backgroundColor: 'lightgrey',
+    borderColor: '#ccc',
+    borderRadius: 8,
+  },
+  dropdownList: {
+    backgroundColor: 'lightgrey',
+    borderColor: '#ccc',
+  },
+  logoutButton: {
+    backgroundColor: '#e74c3c',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  logoutButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
