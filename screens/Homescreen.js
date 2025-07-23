@@ -1,10 +1,6 @@
-import React, { useState, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity,
-  ActivityIndicator
+import React, { useContext, useState } from 'react';
+import {
+  ActivityIndicator, StyleSheet, Text, TouchableOpacity, View
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
@@ -19,10 +15,10 @@ export default function HomeScreen({ navigation }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([
-    { label: 'Carrefour', value: 'carrefour' },
-    { label: 'Quickmart', value: 'quickmart' },
-    { label: 'Naivas', value: 'naivas' },
-    { label: 'Chandarana', value: 'chandarana' },
+    { label: 'Suit', value: 'Suit' },
+    { label: 'Trouser', value: 'Trouser' },
+    { label: 'Shirt', value: 'Shirt' },
+    { label: 'Tie', value: 'Tie' },
   ]);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -63,7 +59,7 @@ export default function HomeScreen({ navigation }) {
           setOpen={setOpen}
           setValue={handleBranchSelect}
           setItems={setItems}
-          placeholder="Select your branch"
+          placeholder="Add clothing"
           listMode="SCROLLVIEW"
           style={styles.dropdown}
           dropDownContainerStyle={styles.dropdownList}
