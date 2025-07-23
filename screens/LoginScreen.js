@@ -1,12 +1,8 @@
-import React, { useState, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert,
-  ActivityIndicator
+import React, { useContext, useState } from 'react';
+import {
+  ActivityIndicator, Alert, StyleSheet, Text,
+  TextInput,
+  TouchableOpacity, View
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { AuthContext } from '../App'; // Adjust path as needed
@@ -63,7 +59,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Preferred Laundry</Text>
+      <Text style={styles.title}>Prefferred Laundry</Text>
 
       <TextInput
         style={styles.input}

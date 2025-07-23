@@ -17,12 +17,12 @@ export default function HomeScreen({ navigation }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([
-    { label: 'Suit', value: 'suit' },
-    { label: 'Trouser', value: 'trouser' },
-    { label: 'Shirt', value: 'shirt' },
-    { label: 'Tie', value: 'tie' },
-    { label: 'Dress', value: 'dress' },
-    { label: 'Skirt', value: 'skirt' },
+    { label: 'Suit', value: 'suit', price: 15.99 },
+    { label: 'Trouser', value: 'trouser', price: 8.99 },
+    { label: 'Shirt', value: 'shirt', price: 7.99 },
+    { label: 'Tie', value: 'tie', price: 5.99 },
+    { label: 'Dress', value: 'dress', price: 12.99 },
+    { label: 'Skirt', value: 'skirt', price: 9.99 },
   ]);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -35,6 +35,7 @@ export default function HomeScreen({ navigation }) {
         id: Date.now().toString(),
         name: selectedItem.label,
         type: selectedItem.value,
+        price: selectedItem.price,
         status: 'pending'
       }]);
       setValue(null); // Reset dropdown
@@ -60,7 +61,10 @@ export default function HomeScreen({ navigation }) {
 
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
-      <Text style={styles.itemText}>{item.name}</Text>
+      <View>
+        <Text style={styles.itemText}>{item.name}</Text>
+        <Text style={styles.priceText}>${item.price.toFixed(2)}</Text>
+      </View>
       <TouchableOpacity onPress={() => handleRemoveItem(item.id)}>
         <Icon name="times" size={20} color="#e74c3c" />
       </TouchableOpacity>
@@ -103,6 +107,14 @@ export default function HomeScreen({ navigation }) {
         />
       ) : (
         <Text style={styles.emptyText}>No items added yet</Text>
+      )}
+
+      {clothingItems.length > 0 && (
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalText}>
+            Total: ${clothingItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+          </Text>
+        </View>
       )}
 
       <TouchableOpacity
@@ -180,11 +192,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  priceText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
   emptyText: {
     textAlign: 'center',
     color: '#999',
     marginVertical: 20,
     fontSize: 16,
+  },
+  totalContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignItems: 'flex-end',
+  },
+  totalText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#231942',
   },
   logoutButton: {
     backgroundColor: '#e74c3c',
