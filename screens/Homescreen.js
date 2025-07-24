@@ -1,4 +1,5 @@
-import React, { useContext, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
   Platform, StyleSheet,
@@ -13,7 +14,14 @@ import { AuthContext } from '../App';
 
 export default function HomeScreen({ navigation }) {
   const { setIsLoggedIn } = useContext(AuthContext);
-  const [clothingItems, setClothingItems] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [currentOrder, setCurrentOrder] = useState({
+    customer: null,
+    items: [],
+    date: new Date(),
+    status: 'pending'
+  });
+  const [customers, setCustomers] = useState([]);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [items, setItems] = useState([
@@ -29,10 +37,39 @@ export default function HomeScreen({ navigation }) {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerSaved, setCustomerSaved] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(true);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+
+  // Load saved data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const savedOrders = await AsyncStorage.getItem('@orders');
+        const savedCustomers = await AsyncStorage.getItem('@customers');
+        if (savedOrders) setOrders(JSON.parse(savedOrders));
+        if (savedCustomers) setCustomers(JSON.parse(savedCustomers));
+      } catch (e) {
+        console.error('Failed to load data', e);
+      }
+    };
+    loadData();
+  }, []);
+
+  // Save data when it changes
+  useEffect(() => {
+    const saveData = async () => {
+      try {
+        await AsyncStorage.setItem('@orders', JSON.stringify(orders));
+        await AsyncStorage.setItem('@customers', JSON.stringify(customers));
+      } catch (e) {
+        console.error('Failed to save data', e);
+      }
+    };
+    saveData();
+  }, [orders, customers]);
 
   const handleAddClothing = (itemValue) => {
     if (!itemValue) return;
-    if (!customerSaved) {
+    if (!currentOrder.customer) {
       Alert.alert('Customer Required', 'Please save customer details first');
       setValue(null);
       return;
@@ -40,19 +77,25 @@ export default function HomeScreen({ navigation }) {
     
     const selectedItem = items.find(item => item.value === itemValue);
     if (selectedItem) {
-      setClothingItems(prev => [...prev, {
-        id: Date.now().toString(),
-        name: selectedItem.label,
-        type: selectedItem.value,
-        price: selectedItem.price,
-        status: 'pending'
-      }]);
+      setCurrentOrder(prev => ({
+        ...prev,
+        items: [...prev.items, {
+          id: Date.now().toString(),
+          name: selectedItem.label,
+          type: selectedItem.value,
+          price: selectedItem.price,
+          status: 'pending'
+        }]
+      }));
       setValue(null);
     }
   };
 
   const handleRemoveItem = (id) => {
-    setClothingItems(prev => prev.filter(item => item.id !== id));
+    setCurrentOrder(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== id)
+    }));
   };
 
   const handleSaveCustomer = () => {
@@ -60,6 +103,19 @@ export default function HomeScreen({ navigation }) {
       Alert.alert('Validation Error', 'Please enter customer name');
       return;
     }
+
+    const newCustomer = {
+      id: Date.now().toString(),
+      name: customerName.trim(),
+      phone: customerPhone.trim(),
+    };
+
+    setCurrentOrder(prev => ({
+      ...prev,
+      customer: newCustomer
+    }));
+
+    setCustomers(prev => [...prev, newCustomer]);
     setCustomerSaved(true);
     setShowCustomerForm(false);
   };
@@ -69,16 +125,66 @@ export default function HomeScreen({ navigation }) {
     setShowCustomerForm(true);
   };
 
-  const handleLogout = async () => {
-    try {
-      setIsProcessing(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setIsLoggedIn(false);
-    } catch (error) {
-      Alert.alert('Error', 'Logout failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
+  const handleSubmitOrder = () => {
+    if (currentOrder.items.length === 0) {
+      Alert.alert('No Items', 'Please add at least one clothing item');
+      return;
     }
+
+    const completedOrder = {
+      ...currentOrder,
+      id: Date.now().toString(),
+      total: currentOrder.items.reduce((sum, item) => sum + item.price, 0)
+    };
+
+    setOrders(prev => [...prev, completedOrder]);
+    
+    // Reset for new order (same customer)
+    setCurrentOrder({
+      customer: currentOrder.customer, // Keep same customer
+      items: [],
+      date: new Date(),
+      status: 'pending'
+    });
+    
+    Alert.alert('Order Submitted', `Order #${completedOrder.id} has been created`);
+  };
+
+  const handleNewCustomer = () => {
+    setCurrentOrder({
+      customer: null,
+      items: [],
+      date: new Date(),
+      status: 'pending'
+    });
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerSaved(false);
+    setShowCustomerForm(true);
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          onPress: async () => {
+            try {
+              setIsProcessing(true);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              setIsLoggedIn(false);
+            } catch (error) {
+              Alert.alert('Error', 'Logout failed. Please try again.');
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const renderItem = ({ item }) => (
@@ -104,6 +210,44 @@ export default function HomeScreen({ navigation }) {
       {showCustomerForm ? (
         <View style={styles.customerForm}>
           <Text style={styles.sectionTitle}>Customer Details</Text>
+          
+          {customers.length > 0 && (
+            <TouchableOpacity 
+              style={styles.existingCustomerButton}
+              onPress={() => setShowCustomerDropdown(true)}
+            >
+              <Text>Select Existing Customer</Text>
+            </TouchableOpacity>
+          )}
+
+          {showCustomerDropdown && (
+            <DropDownPicker
+              open={showCustomerDropdown}
+              value={null}
+              items={customers.map(c => ({
+                label: `${c.name} (${c.phone || 'no phone'})`,
+                value: c.id
+              }))}
+              setOpen={setShowCustomerDropdown}
+              setValue={(value) => {
+                const selected = customers.find(c => c.id === value);
+                if (selected) {
+                  setCustomerName(selected.name);
+                  setCustomerPhone(selected.phone);
+                  setCurrentOrder(prev => ({
+                    ...prev,
+                    customer: selected
+                  }));
+                  setCustomerSaved(true);
+                  setShowCustomerForm(false);
+                }
+              }}
+              placeholder="Select existing customer"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownList}
+            />
+          )}
+
           <TextInput
             style={styles.input}
             placeholder="Full Name *"
@@ -114,8 +258,14 @@ export default function HomeScreen({ navigation }) {
             style={styles.input}
             placeholder="Phone Number"
             value={customerPhone}
-            onChangeText={setCustomerPhone}
+            onChangeText={text => {
+              const formatted = text.replace(/[^0-9]/g, '');
+              if (formatted.length <= 10) {
+                setCustomerPhone(formatted);
+              }
+            }}
             keyboardType="phone-pad"
+            maxLength={10}
           />
           <TouchableOpacity
             style={styles.saveButton}
@@ -132,36 +282,39 @@ export default function HomeScreen({ navigation }) {
               <Icon name="edit" size={18} color="#3498db" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.customerText}>{customerName}</Text>
-          {customerPhone && <Text style={styles.customerPhone}>{customerPhone}</Text>}
+          <Text style={styles.customerText}>{currentOrder.customer?.name}</Text>
+          {currentOrder.customer?.phone && (
+            <Text style={styles.customerPhone}>{currentOrder.customer.phone}</Text>
+          )}
         </View>
       )}
 
-      <View style={styles.dropdownContainer}>
-        <DropDownPicker
-          open={open}
-          value={value}
-          items={items}
-          setOpen={setOpen}
-          setValue={setValue}
-          onChangeValue={handleAddClothing}
-          setItems={setItems}
-          placeholder="Select clothing type"
-          listMode="MODAL"
-          modalProps={{
-            animationType: 'slide'
-          }}
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownList}
-          searchable={true}
-          searchPlaceholder="Search clothing..."
-          disabled={!customerSaved}
-        />
-      </View>
+      {customerSaved && (
+        <View style={styles.dropdownContainer}>
+          <DropDownPicker
+            open={open}
+            value={value}
+            items={items}
+            setOpen={setOpen}
+            setValue={setValue}
+            onChangeValue={handleAddClothing}
+            setItems={setItems}
+            placeholder="Select clothing type"
+            listMode="MODAL"
+            modalProps={{
+              animationType: 'slide'
+            }}
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownList}
+            searchable={true}
+            searchPlaceholder="Search clothing..."
+          />
+        </View>
+      )}
 
-      {clothingItems.length > 0 ? (
+      {currentOrder.items.length > 0 ? (
         <FlatList
-          data={clothingItems}
+          data={currentOrder.items}
           renderItem={renderItem}
           keyExtractor={item => item.id}
           style={styles.list}
@@ -171,11 +324,29 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.emptyText}>No items added yet</Text>
       )}
 
-      {clothingItems.length > 0 && (
+      {currentOrder.items.length > 0 && (
         <View style={styles.totalContainer}>
           <Text style={styles.totalText}>
-            Total: ${clothingItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+            Total: ${currentOrder.items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
           </Text>
+        </View>
+      )}
+
+      {currentOrder.items.length > 0 && (
+        <View style={styles.orderActions}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.submitButton]}
+            onPress={handleSubmitOrder}
+          >
+            <Text style={styles.buttonText}>Submit Order</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.actionButton, styles.newCustomerButton]}
+            onPress={handleNewCustomer}
+          >
+            <Text style={styles.buttonText}>New Customer</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -364,4 +535,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
+  orderActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10
+  },
+  actionButton: {
+    padding: 15,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 5,
+    alignItems: 'center'
+  },
+  submitButton: {
+    backgroundColor: '#2ecc71'
+  },
+  newCustomerButton: {
+    backgroundColor: '#3498db'
+  },
+  existingCustomerButton: {
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    marginBottom: 10,
+    alignItems: 'center'
+  }
 });
