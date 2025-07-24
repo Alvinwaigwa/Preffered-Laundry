@@ -1,8 +1,9 @@
 import React, { useContext, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList,
-  StyleSheet,
+  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
+  Platform, StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
@@ -12,7 +13,6 @@ import { AuthContext } from '../App';
 
 export default function HomeScreen({ navigation }) {
   const { setIsLoggedIn } = useContext(AuthContext);
-  const [selectedClothing, setSelectedClothing] = useState(null);
   const [clothingItems, setClothingItems] = useState([]);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
@@ -25,9 +25,18 @@ export default function HomeScreen({ navigation }) {
     { label: 'Skirt', value: 'skirt', price: 9.99 },
   ]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerSaved, setCustomerSaved] = useState(false);
+  const [showCustomerForm, setShowCustomerForm] = useState(true);
 
   const handleAddClothing = (itemValue) => {
     if (!itemValue) return;
+    if (!customerSaved) {
+      Alert.alert('Customer Required', 'Please save customer details first');
+      setValue(null);
+      return;
+    }
     
     const selectedItem = items.find(item => item.value === itemValue);
     if (selectedItem) {
@@ -38,7 +47,7 @@ export default function HomeScreen({ navigation }) {
         price: selectedItem.price,
         status: 'pending'
       }]);
-      setValue(null); // Reset dropdown
+      setValue(null);
     }
   };
 
@@ -46,10 +55,23 @@ export default function HomeScreen({ navigation }) {
     setClothingItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const handleSaveCustomer = () => {
+    if (!customerName.trim()) {
+      Alert.alert('Validation Error', 'Please enter customer name');
+      return;
+    }
+    setCustomerSaved(true);
+    setShowCustomerForm(false);
+  };
+
+  const handleEditCustomer = () => {
+    setCustomerSaved(false);
+    setShowCustomerForm(true);
+  };
+
   const handleLogout = async () => {
     try {
       setIsProcessing(true);
-      // Add any cleanup logic here (e.g., API call to invalidate token)
       await new Promise(resolve => setTimeout(resolve, 1000));
       setIsLoggedIn(false);
     } catch (error) {
@@ -72,9 +94,48 @@ export default function HomeScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Preferred Laundry</Text>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <Text style={styles.title}>Prefferred Laundry</Text>
       <Text style={styles.subtitle}>Add your clothing items</Text>
+
+      {showCustomerForm ? (
+        <View style={styles.customerForm}>
+          <Text style={styles.sectionTitle}>Customer Details</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name *"
+            value={customerName}
+            onChangeText={setCustomerName}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Phone Number"
+            value={customerPhone}
+            onChangeText={setCustomerPhone}
+            keyboardType="phone-pad"
+          />
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSaveCustomer}
+          >
+            <Text style={styles.saveButtonText}>Save Customer</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.customerInfo}>
+          <View style={styles.customerHeader}>
+            <Text style={styles.sectionTitle}>Customer</Text>
+            <TouchableOpacity onPress={handleEditCustomer}>
+              <Icon name="edit" size={18} color="#3498db" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.customerText}>{customerName}</Text>
+          {customerPhone && <Text style={styles.customerPhone}>{customerPhone}</Text>}
+        </View>
+      )}
 
       <View style={styles.dropdownContainer}>
         <DropDownPicker
@@ -94,6 +155,7 @@ export default function HomeScreen({ navigation }) {
           dropDownContainerStyle={styles.dropdownList}
           searchable={true}
           searchPlaceholder="Search clothing..."
+          disabled={!customerSaved}
         />
       </View>
 
@@ -131,7 +193,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -153,6 +215,68 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
     color: '#666',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#231942',
+    marginBottom: 10,
+  },
+  customerForm: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  customerInfo: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  customerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  input: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  saveButton: {
+    backgroundColor: '#2ecc71',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  customerText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  customerPhone: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
   },
   dropdownContainer: {
     marginBottom: 20,
@@ -209,6 +333,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 15,
     alignItems: 'flex-end',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   totalText: {
     fontSize: 18,
