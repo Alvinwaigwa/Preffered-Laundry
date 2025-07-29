@@ -1,20 +1,19 @@
-import React, { useState, useEffect, createContext } from 'react';
-import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { createContext, useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { globalStyles } from './styles/globalStyles';
 import ImageViewer from './components/ImageViewer';
-import LoginScreen from './screens/LoginScreen';
 import Homescreen from './screens/Homescreen';
+import LoginScreen from './screens/LoginScreen';
+import OrderFormScreen from './screens/OrderFormScreen';
+import { globalStyles } from './styles/globalStyles';
 
 const Logo = require('./assets/cropped-headerfinal.jpg');
 
-// Create Auth Context
 export const AuthContext = createContext();
 
-// Navigation structures
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -24,14 +23,11 @@ export default function App() {
 
   useEffect(() => {
     const checkAuthStatus = async () => {
-      // Here you could check AsyncStorage for existing auth tokens
-      // For now we'll just use the splash screen timer
       setTimeout(() => setIsLoading(false), 3000);
     };
     checkAuthStatus();
   }, []);
 
-  // Home tabs component
   const HomeTabs = () => (
     <Tab.Navigator
       screenOptions={{
@@ -50,11 +46,9 @@ export default function App() {
           headerTitle: 'Home',
         }}
       />
-      {/* Add more tabs here as needed */}
     </Tab.Navigator>
   );
 
-  // Splash screen
   if (isLoading) {
     return (
       <View style={globalStyles.splashContainer}>
@@ -75,11 +69,18 @@ export default function App() {
               options={{ headerShown: false }}
             />
           ) : (
-            <Stack.Screen
-              name="Home"
-              component={HomeTabs}
-              options={{ headerShown: false }}
-            />
+            <>
+              <Stack.Screen
+                name="Home"
+                component={HomeTabs}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="OrderForm"
+                component={OrderFormScreen}
+                options={{ title: 'New Order' }}
+              />
+            </>
           )}
         </Stack.Navigator>
       </NavigationContainer>
