@@ -1,153 +1,220 @@
-import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker';
+import React, { useEffect, useState } from 'react';
 import {
-    Alert, FlatList, StyleSheet, Text,
-    TextInput,
-    TouchableOpacity, View
+  Alert,
+  ScrollView, StyleSheet, Text,
+  TextInput,
+  TouchableOpacity, View
 } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-const OrderFormScreen = ({ navigation, route }) => {
-  const { onSaveOrder } = route.params || {};
+const OrderFormScreen = ({ route, navigation }) => {
+  const { orderToEdit, onSaveOrder } = route.params || {};
   
-  // Form state
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [items, setItems] = useState([]);
-  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [order, setOrder] = useState({
+    id: orderToEdit?.id || Date.now().toString(),
+    customer: orderToEdit?.customer || { name: '', phone: '', address: '' },
+    items: orderToEdit?.items || [],
+    status: orderToEdit?.status || 'pending',
+    total: orderToEdit?.total || 0,
+    createdAt: orderToEdit?.createdAt || new Date().toISOString(),
+    notes: orderToEdit?.notes || ''
+  });
   
-  // Dropdown state
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
-  const [itemsDropdown, setItemsDropdown] = useState([
-    { label: 'Suit - $15.99', value: 'suit', price: 15.99 },
-    { label: 'Trouser - $8.99', value: 'trouser', price: 8.99 },
-    { label: 'Shirt - $7.99', value: 'shirt', price: 7.99 },
-    { label: 'Dress - $12.99', value: 'dress', price: 12.99 },
-    { label: 'Jacket - $10.99', value: 'jacket', price: 10.99 },
-  ]);
+  const [newItem, setNewItem] = useState({
+    name: '',
+    price: '',
+    quantity: 1
+  });
+  
+  const [customers, setCustomers] = useState([]);
 
-  const handleAddItem = (itemValue) => {
-    if (!itemValue) return;
+  useEffect(() => {
+    const loadCustomers = async () => {
+      try {
+        const savedCustomers = await AsyncStorage.getItem('customers');
+        if (savedCustomers) {
+          setCustomers(JSON.parse(savedCustomers));
+        }
+      } catch (error) {
+        console.error('Failed to load customers', error);
+      }
+    };
     
-    const selectedItem = itemsDropdown.find(item => item.value === itemValue);
-    if (selectedItem) {
-      setItems(prev => [...prev, {
-        id: Date.now().toString(),
-        name: selectedItem.label.split(' - ')[0],
-        price: selectedItem.price,
-        quantity: 1
-      }]);
-      setValue(null); // Reset dropdown
+    loadCustomers();
+  }, []);
+
+  const handleAddItem = () => {
+    if (!newItem.name || !newItem.price) {
+      Alert.alert('Error', 'Please enter item name and price');
+      return;
     }
+    
+    const item = {
+      ...newItem,
+      price: parseFloat(newItem.price),
+      id: Date.now().toString()
+    };
+    
+    setOrder(prev => ({
+      ...prev,
+      items: [...prev.items, item],
+      total: prev.total + (item.price * item.quantity)
+    }));
+    
+    setNewItem({ name: '', price: '', quantity: 1 });
   };
 
   const handleRemoveItem = (id) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+    const itemToRemove = order.items.find(item => item.id === id);
+    if (!itemToRemove) return;
+    
+    setOrder(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== id),
+      total: prev.total - (itemToRemove.price * itemToRemove.quantity)
+    }));
   };
 
   const handleSave = () => {
-    if (!customerName.trim()) {
-      Alert.alert('Error', 'Please enter customer name');
+    if (!order.customer.name || !order.customer.phone) {
+      Alert.alert('Error', 'Please enter customer name and phone');
       return;
-    }
-
-    if (items.length === 0) {
-      Alert.alert('Error', 'Please add at least one item');
-      return;
-    }
-
-    const newOrder = {
-      id: `ORD-${Date.now()}`,
-      customer: {
-        name: customerName,
-        phone: customerPhone
-      },
-      items,
-      specialInstructions,
-      total: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-
-    if (onSaveOrder) {
-      onSaveOrder(newOrder);
     }
     
+    if (order.items.length === 0) {
+      Alert.alert('Error', 'Please add at least one service item');
+      return;
+    }
+    
+    if (onSaveOrder) {
+      onSaveOrder(order);
+    }
     navigation.goBack();
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>New Laundry Order</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>
+        {orderToEdit ? 'Edit Order' : 'New Order'}
+      </Text>
       
-      <Text style={styles.sectionTitle}>Customer Details</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Full Name *"
-        value={customerName}
-        onChangeText={setCustomerName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Phone Number"
-        value={customerPhone}
-        onChangeText={setCustomerPhone}
-        keyboardType="phone-pad"
-      />
-
-      <Text style={styles.sectionTitle}>Items</Text>
-      <DropDownPicker
-        open={open}
-        value={value}
-        items={itemsDropdown}
-        setOpen={setOpen}
-        setValue={setValue}
-        setItems={setItemsDropdown}
-        onChangeValue={handleAddItem}
-        placeholder="Select an item"
-        style={styles.dropdown}
-        dropDownContainerStyle={styles.dropdownContainer}
-      />
-
-      <FlatList
-        data={items}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.itemRow}>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Customer Information</Text>
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Customer Name"
+          value={order.customer.name}
+          onChangeText={(text) => setOrder(prev => ({
+            ...prev,
+            customer: { ...prev.customer, name: text }
+          }))}
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Phone Number"
+          value={order.customer.phone}
+          onChangeText={(text) => setOrder(prev => ({
+            ...prev,
+            customer: { ...prev.customer, phone: text }
+          }))}
+          keyboardType="phone-pad"
+        />
+        
+        <TextInput
+          style={styles.input}
+          placeholder="Address (Optional)"
+          value={order.customer.address}
+          onChangeText={(text) => setOrder(prev => ({
+            ...prev,
+            customer: { ...prev.customer, address: text }
+          }))}
+        />
+      </View>
+      
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Services</Text>
+        
+        {order.items.map((item, index) => (
+          <View key={item.id} style={styles.itemRow}>
             <View style={styles.itemInfo}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <Text>${item.price.toFixed(2)} × {item.quantity}</Text>
+              <Text style={styles.itemName}>
+                {item.quantity}x {item.name}
+              </Text>
+              <Text style={styles.itemPrice}>
+                ${(item.price * item.quantity).toFixed(2)}
+              </Text>
             </View>
             <TouchableOpacity onPress={() => handleRemoveItem(item.id)}>
               <Icon name="trash" size={20} color="#e74c3c" />
             </TouchableOpacity>
           </View>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No items added yet</Text>
-        }
-      />
-
-      <Text style={styles.sectionTitle}>Special Instructions</Text>
-      <TextInput
-        style={[styles.input, { height: 80 }]}
-        placeholder="Any special requirements?"
-        value={specialInstructions}
-        onChangeText={setSpecialInstructions}
-        multiline
-      />
-
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalText}>
-          Total: ${items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}
-        </Text>
+        ))}
+        
+        <View style={styles.addItemContainer}>
+          <TextInput
+            style={[styles.input, { flex: 2 }]}
+            placeholder="Service Name"
+            value={newItem.name}
+            onChangeText={(text) => setNewItem(prev => ({ ...prev, name: text }))}
+          />
+          
+          <TextInput
+            style={[styles.input, { flex: 1, marginHorizontal: 10 }]}
+            placeholder="Price"
+            value={newItem.price}
+            onChangeText={(text) => setNewItem(prev => ({ ...prev, price: text }))}
+            keyboardType="decimal-pad"
+          />
+          
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={handleAddItem}
+          >
+            <Icon name="plus" size={16} color="white" />
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save Order</Text>
+      
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Order Details</Text>
+        
+        <Picker
+          selectedValue={order.status}
+          onValueChange={(value) => setOrder(prev => ({ ...prev, status: value }))}
+          style={styles.picker}
+        >
+          <Picker.Item label="Pending" value="pending" />
+          <Picker.Item label="In Progress" value="in_progress" />
+          <Picker.Item label="Completed" value="completed" />
+        </Picker>
+        
+        <TextInput
+          style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+          placeholder="Notes (Optional)"
+          value={order.notes}
+          onChangeText={(text) => setOrder(prev => ({ ...prev, notes: text }))}
+          multiline
+        />
+      </View>
+      
+      <View style={styles.totalContainer}>
+        <Text style={styles.totalLabel}>Total:</Text>
+        <Text style={styles.totalAmount}>${order.total.toFixed(2)}</Text>
+      </View>
+      
+      <TouchableOpacity 
+        style={styles.saveButton}
+        onPress={handleSave}
+      >
+        <Text style={styles.saveButtonText}>
+          {orderToEdit ? 'Update Order' : 'Save Order'}
+        </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -155,78 +222,98 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f8f9fa'
   },
-  header: {
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#2c3e50',
-    textAlign: 'center'
+    color: '#2c3e50'
+  },
+  section: {
+    marginBottom: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    elevation: 2
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#3498db'
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#3498db',
+    fontSize: 16
   },
   input: {
-    backgroundColor: 'white',
-    padding: 12,
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
+    padding: 12,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#ddd'
-  },
-  dropdown: {
-    backgroundColor: 'white',
-    borderColor: '#ddd',
-    marginBottom: 15
-  },
-  dropdownContainer: {
-    backgroundColor: 'white',
     borderColor: '#ddd'
   },
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#eee'
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
   },
   itemInfo: {
+    flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10
+    justifyContent: 'space-between'
   },
   itemName: {
-    fontWeight: '500'
+    flex: 2
   },
-  emptyText: {
-    textAlign: 'center',
-    color: '#95a5a6',
-    marginVertical: 15
+  itemPrice: {
+    flex: 1,
+    textAlign: 'right'
+  },
+  addItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  addButton: {
+    backgroundColor: '#3498db',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  picker: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd'
   },
   totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     backgroundColor: 'white',
+    borderRadius: 10,
     padding: 15,
-    borderRadius: 8,
-    marginVertical: 15,
-    alignItems: 'flex-end'
+    marginBottom: 20,
+    elevation: 2
   },
-  totalText: {
-    fontSize: 18,
+  totalLabel: {
     fontWeight: 'bold',
+    fontSize: 18,
     color: '#2c3e50'
   },
+  totalAmount: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#3498db'
+  },
   saveButton: {
-    backgroundColor: '#2ecc71',
-    padding: 15,
+    backgroundColor: '#3498db',
     borderRadius: 8,
+    padding: 15,
+    justifyContent: 'center',
     alignItems: 'center'
   },
   saveButtonText: {

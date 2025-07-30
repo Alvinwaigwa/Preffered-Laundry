@@ -1,162 +1,133 @@
 import React, { useContext, useState } from 'react';
-import {
-  ActivityIndicator, Alert, StyleSheet, Text,
-  TextInput,
-  TouchableOpacity, View
-} from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
-import { AuthContext } from '../App'; // Adjust path as needed
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { AuthContext } from '../App';
 
-export default function LoginScreen({ navigation }) {
-  // Get auth context
+const LoginScreen = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { setIsLoggedIn } = useContext(AuthContext);
 
-  // Form states
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Dropdown states
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
-  const [items, setItems] = useState([
-    { label: 'Carrefour', value: 'carrefour' },
-    { label: 'Quickmart', value: 'quickmart' },
-    { label: 'Naivas', value: 'naivas' },
-    { label: 'Chandarana', value: 'chandarana' },
-  ]);
-
-  const handleLogin = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Validate inputs
-      if (!email || !password || !value) {
-        Alert.alert('Validation Error', 'Please fill all fields and select a branch');
-        return;
-      }
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock authentication - replace with real API call
-      const isAuthenticated = email === 'name@example.com' && password === 'password';
-      
-      if (isAuthenticated) {
-        setIsLoggedIn(true);
-        // Optional: Save branch selection
-        // await AsyncStorage.setItem('selectedBranch', value);
-      } else {
-        Alert.alert('Login Failed', 'Invalid credentials');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Login failed. Please try again.');
-      console.error('Login error:', error);
-    } finally {
-      setIsLoading(false);
+  const handleLogin = () => {
+    if (!username || !password) {
+      Alert.alert('Error', 'Please enter both username and password');
+      return;
+    }
+    
+    // Simple validation - replace with actual auth logic
+    if (username === 'admin' && password === 'password') {
+      setIsLoggedIn(true);
+    } else {
+      Alert.alert('Error', 'Invalid credentials');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Prefferred Laundry</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        autoCorrect={false}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <View style={styles.dropdownContainer}>
-        <DropDownPicker
-          open={open}
-          value={value}
-          items={items}
-          setOpen={setOpen}
-          setValue={setValue}
-          setItems={setItems}
-          placeholder="Select your branch"
-          listMode="SCROLLVIEW"
-          style={styles.dropdown}
-          dropDownContainerStyle={styles.dropdownList}
-        />
+      <View style={styles.logoContainer}>
+        <Text style={styles.title}>Preffered Laundry</Text>
       </View>
-
-      <TouchableOpacity 
-        style={styles.loginButton}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="white" />
-        ) : (
+      
+      <View style={styles.formContainer}>
+        <View style={styles.inputContainer}>
+          <Icon name="user" size={20} color="#95a5a6" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+        </View>
+        
+        <View style={styles.inputContainer}>
+          <Icon name="lock" size={20} color="#95a5a6" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Icon 
+              name={showPassword ? 'eye-slash' : 'eye'} 
+              size={20} 
+              color="#95a5a6" 
+            />
+          </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Login</Text>
-        )}
-      </TouchableOpacity>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.forgotPassword}>
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
+    padding: 30,
+    backgroundColor: '#f8f9fa'
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 50
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
-    fontStyle: 'italic',
-    color: '#231942',
-    marginBottom: 24,
-    textAlign: 'center',
+    marginTop: 15,
+    color: '#2c3e50'
   },
-  input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
+  formContainer: {
+    marginBottom: 30
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
     borderRadius: 8,
     paddingHorizontal: 15,
-    marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    marginBottom: 15,
+    elevation: 2
   },
-  dropdownContainer: {
-    marginBottom: 20,
-    zIndex: 1000, // Important for dropdown to appear above other elements
+  inputIcon: {
+    marginRight: 10
   },
-  dropdown: {
-    backgroundColor: 'lightgrey',
-    borderColor: '#ccc',
-    borderRadius: 8,
-  },
-  dropdownList: {
-    backgroundColor: 'lightgrey',
-    borderColor: '#ccc',
+  input: {
+    flex: 1,
+    height: 50,
+    color: '#2c3e50'
   },
   loginButton: {
-    backgroundColor: '#231942',
-    padding: 15,
+    backgroundColor: '#3498db',
     borderRadius: 8,
+    height: 50,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 10
   },
   loginButtonText: {
     color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: 'bold'
   },
+  forgotPassword: {
+    alignSelf: 'center',
+    marginTop: 20
+  },
+  forgotPasswordText: {
+    color: '#3498db'
+  }
 });
+
+export default LoginScreen;

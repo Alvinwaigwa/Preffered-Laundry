@@ -24,6 +24,10 @@ const OrderDetailScreen = ({ route, navigation }) => {
     );
   };
 
+  const printReceipt = () => {
+    Alert.alert('Print Receipt', 'Receipt sent to printer');
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -53,8 +57,10 @@ const OrderDetailScreen = ({ route, navigation }) => {
         <Text style={styles.sectionTitle}>Services</Text>
         {order.items?.map((item, index) => (
           <View key={index} style={styles.serviceItem}>
-            <Text style={styles.serviceName}>{item.name}</Text>
-            <Text style={styles.servicePrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.serviceName}>
+              {item.quantity}x {item.name}
+            </Text>
+            <Text style={styles.servicePrice}>${(item.price * item.quantity).toFixed(2)}</Text>
           </View>
         ))}
         <View style={styles.totalContainer}>
@@ -63,7 +69,27 @@ const OrderDetailScreen = ({ route, navigation }) => {
         </View>
       </View>
 
+      {order.notes && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notes</Text>
+          <Text style={styles.detailText}>{order.notes}</Text>
+        </View>
+      )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Order Date</Text>
+        <Text style={styles.detailText}>
+          {new Date(order.createdAt).toLocaleString()}
+        </Text>
+      </View>
+
       <View style={styles.actionButtons}>
+        <Button 
+          icon="print" 
+          title="Print Receipt" 
+          color="#9b59b6"
+          onPress={printReceipt} 
+        />
         <Button 
           icon="pencil" 
           title="Edit Order" 
@@ -164,7 +190,8 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20
+    marginTop: 20,
+    flexWrap: 'wrap'
   }
 });
 

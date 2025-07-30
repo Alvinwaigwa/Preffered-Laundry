@@ -178,7 +178,7 @@ export default function Homescreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <Text style={styles.title}>Laundry Dashboard</Text>
+      <Text style={styles.title}>Dashboard</Text>
       
       <View style={styles.metricsRow}>
         {renderMetricCard(metrics.totalOrders, 'Total Orders', 'list-ol')}
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     backgroundColor: '#f8f9fa'
-  },
+  },    
   title: {
     fontSize: 24,
     fontWeight: 'bold',
