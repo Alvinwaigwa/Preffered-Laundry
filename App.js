@@ -3,10 +3,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { createContext, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler'; // ✅ Add this line
 import Icon from 'react-native-vector-icons/FontAwesome';
+
 import ImageViewer from './components/ImageViewer';
 import Homescreen from './screens/Homescreen';
 import LoginScreen from './screens/LoginScreen';
+import OrderDetailScreen from './screens/OrderDetailScreen';
 import OrderFormScreen from './screens/OrderFormScreen';
 import { globalStyles } from './styles/globalStyles';
 
@@ -51,39 +54,48 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <View style={globalStyles.splashContainer}>
-        <ImageViewer placeholderImageSource={Logo} />
-        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
-      </View>
+      <GestureHandlerRootView style={{ flex: 1 }}> 
+        <View style={globalStyles.splashContainer}>
+          <ImageViewer placeholderImageSource={Logo} />
+          <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+        </View>
+      </GestureHandlerRootView>
     );
   }
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn }}>
-      <NavigationContainer>
-        <Stack.Navigator>
-          {!isLoggedIn ? (
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-              options={{ headerShown: false }}
-            />
-          ) : (
-            <>
+    <GestureHandlerRootView style={{ flex: 1 }}> 
+      <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn }}>
+        <NavigationContainer>
+          <Stack.Navigator>
+            {!isLoggedIn ? (
               <Stack.Screen
-                name="Home"
-                component={HomeTabs}
+                name="Login"
+                component={LoginScreen}
                 options={{ headerShown: false }}
               />
-              <Stack.Screen
-                name="OrderForm"
-                component={OrderFormScreen}
-                options={{ title: 'New Order' }}
-              />
-            </>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </AuthContext.Provider>
+            ) : (
+              <>
+                <Stack.Screen
+                  name="Home"
+                  component={HomeTabs}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="OrderForm"
+                  component={OrderFormScreen}
+                  options={{ title: 'New Order' }}
+                />
+                <Stack.Screen 
+                  name="OrderDetail" 
+                  component={OrderDetailScreen}
+                  options={{ title: 'Order Details' }}
+                />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AuthContext.Provider>
+    </GestureHandlerRootView>
   );
 }
