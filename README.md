@@ -1,50 +1,46 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+👔 Preferred Laundry & Dry Cleaning App
+A mobile app built with Expo and React Native for Preferred Laundry & Dry Cleaning.
+The app helps staff and admins track clothes washed per branch, calculate monthly totals, and generate PDF invoices for billing.
+🚀 Getting Started
+Clone the repo
+git clone https://github.com/your-username/preferred-laundry-app.git
+cd preferred-laundry-app
+Install dependencies
+npm install
+Start the development server
+npx expo start
+Run the app on:
+📱 Expo Go (scan QR code)
+📱 Android Emulator
+🍏 iOS Simulator
+🛠 Development build
+📂 Project Structure
+preferred-laundry-app/
+│── app/          # Main app screens & navigation
+│── components/   # Reusable UI components
+│── data/         # JSON data (e.g., clothes, billing)
+│── utils/        # Helpers (totals, date formatting, invoices)
+│── assets/       # Images, icons, fonts
+│── package.json  # Dependencies & scripts
+✨ Features
+Track number of clothes washed per branch
+Automatic monthly totals and billing
+Generate PDF invoices for customers
+Dark mode support 🌙
+Clean, simple UI for staff & admin
+🛠 Tech Stack
+Expo – fast development & testing
+React Native – cross-platform mobile apps
+React Navigation – routing
+React Native PDF (or similar) – invoice generation
+📖 Learn More
+Expo Docs
+React Native Docs
+🤝 Contributing
+Fork the repo
+Create a feature branch (git checkout -b feature/new-feature)
+Commit changes (git commit -m "Add new feature")
+Push to branch (git push origin feature/new-feature)
+Open a Pull Request
+📜 License
+This project is licensed under the MIT License.
